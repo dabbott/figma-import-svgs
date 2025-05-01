@@ -152,19 +152,13 @@ type Inputs = {
   FIGMA_TOKEN: string;
 };
 
-type Parameters = {
-  inputs: Inputs;
-  fetch?: typeof globalThis.fetch;
-};
-
-export default async function main({ inputs, fetch }: Parameters) {
+export default async function main({ fileId, FIGMA_TOKEN }: Inputs) {
   const figmaService = new FigmaService({
-    token: inputs.FIGMA_TOKEN,
-    fetch,
+    token: FIGMA_TOKEN,
   });
 
   const results = await figmaService.import({
-    fileId: inputs.fileId,
+    fileId,
   });
 
   return results;
