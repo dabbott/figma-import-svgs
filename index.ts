@@ -42,10 +42,26 @@ export class FigmaService {
     };
   }
 
-  private getHeaders() {
+  private getPersonalAccessTokenHeaders() {
     return {
       "X-Figma-Token": this.options.token,
     };
+  }
+
+  private getBearerTokenHeaders() {
+    return {
+      Authorization: `Bearer ${this.options.token}`,
+    };
+  }
+
+  private getHeaders() {
+    const token = this.options.token;
+
+    if (token.startsWith("figd")) {
+      return this.getPersonalAccessTokenHeaders();
+    }
+
+    return this.getBearerTokenHeaders();
   }
 
   async fetchFile(fileId: string, version?: string): Promise<FigmaFile> {
