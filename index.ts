@@ -129,6 +129,8 @@ export class FigmaService {
       throw new Error("File key is required");
     }
 
+    console.log("fetching file", fileId, version);
+
     const data = await this.fetchFile(fileId, version);
 
     // Get all components from the file
@@ -149,6 +151,8 @@ export class FigmaService {
     // Filter components by nodeId if provided
     let componentList = allComponents;
 
+    console.log("found", allComponents.length, "components");
+
     if (nodeId) {
       // Find the specified node in the document
       const findNode = (nodes: any[]): any | undefined => {
@@ -165,6 +169,8 @@ export class FigmaService {
       };
 
       const targetNode = findNode(data.document.children);
+
+      console.log("found node", nodeId, targetNode);
 
       if (targetNode) {
         // Collect all component IDs within this node and its children
@@ -216,6 +222,8 @@ export class FigmaService {
           console.error(`Failed to fetch SVG for ${component.name}:`, error);
           return [];
         }
+
+        console.log("fetched svg for component", component.name);
 
         return [
           [`${component.name}.svg`, { type: "file", content: svgString }],
