@@ -119,29 +119,85 @@ export class FigmaService {
   async import(options: {
     fileId: string;
     version?: string;
+    nodeId?: string;
   }): Promise<Record<string, string>> {
     const fileId = options.fileId;
     const version = options.version;
+    const nodeId = options.nodeId;
 
     if (!fileId) {
       throw new Error("File key is required");
     }
 
     const data = await this.fetchFile(fileId, version);
+
+    // Get all components from the file
     const componentEntries = Object.entries(data.components || {});
 
     if (componentEntries.length === 0) {
       return {};
     }
 
-    const componentList: FigmaComponentWithId[] = componentEntries.map(
+    // Create component list with IDs
+    const allComponents: FigmaComponentWithId[] = componentEntries.map(
       ([id, component]) => ({
         ...component,
         id,
       })
     );
 
+    // Filter components by nodeId if provided
+    let componentList = allComponents;
+
+    if (nodeId) {
+      // Find the specified node in the document
+      const findNode = (nodes: any[]): any | undefined => {
+        for (const node of nodes) {
+          if (node.id === nodeId) {
+            return node;
+          }
+          if (node.children) {
+            const found = findNode(node.children);
+            if (found) return found;
+          }
+        }
+        return undefined;
+      };
+
+      const targetNode = findNode(data.document.children);
+
+      if (targetNode) {
+        // Collect all component IDs within this node and its children
+        const collectComponentIds = (
+          node: any,
+          ids: Set<string> = new Set()
+        ): Set<string> => {
+          if (node.componentId) {
+            ids.add(node.componentId);
+          }
+          if (node.children) {
+            for (const child of node.children) {
+              collectComponentIds(child, ids);
+            }
+          }
+          return ids;
+        };
+
+        const nodeComponentIds = collectComponentIds(targetNode);
+
+        // Filter the component list to only include components within the specified node
+        componentList = allComponents.filter((component) =>
+          nodeComponentIds.has(component.id)
+        );
+      }
+    }
+
     const componentIds = componentList.map((c) => c.id);
+
+    // If no components found after filtering, return empty result
+    if (componentIds.length === 0) {
+      return {};
+    }
 
     const svgUrls = await this.fetchComponentSVGs(
       fileId,
@@ -150,12 +206,20 @@ export class FigmaService {
     );
 
     const svgFiles = await Promise.all(
-      componentList.map(async (component) => {
+      componentList.flatMap(async (component) => {
         const svgUrl = svgUrls[component.id];
 
-        const svgString = await this.fetchSVGContent(svgUrl);
+        let svgString: string;
+        try {
+          svgString = await this.fetchSVGContent(svgUrl);
+        } catch (error) {
+          console.error(`Failed to fetch SVG for ${component.name}:`, error);
+          return [];
+        }
 
-        return [`${component.name}.svg`, { type: "file", content: svgString }];
+        return [
+          [`${component.name}.svg`, { type: "file", content: svgString }],
+        ];
       })
     );
 
@@ -166,15 +230,17 @@ export class FigmaService {
 type Inputs = {
   fileId: string;
   FIGMA_TOKEN: string;
+  nodeId?: string;
 };
 
-export default async function main({ fileId, FIGMA_TOKEN }: Inputs) {
+export default async function main({ fileId, FIGMA_TOKEN, nodeId }: Inputs) {
   const figmaService = new FigmaService({
     token: FIGMA_TOKEN,
   });
 
   const results = await figmaService.import({
     fileId,
+    nodeId,
   });
 
   return results;
