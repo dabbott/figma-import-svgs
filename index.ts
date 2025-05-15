@@ -123,9 +123,7 @@ export class FigmaService {
     const fileId = options.fileId;
     const version = options.version;
 
-    if (!fileId) {
-      throw new Error("File key is required");
-    }
+    console.log("Fetching Figma file", fileId, version);
 
     const data = await this.fetchFile(fileId, version);
     const componentEntries = Object.entries(data.components || {});
@@ -153,6 +151,8 @@ export class FigmaService {
       componentList.map(async (component) => {
         const svgUrl = svgUrls[component.id];
 
+        console.log("Fetching content", svgUrl);
+
         const svgString = await this.fetchSVGContent(svgUrl);
 
         return [`${component.name}.svg`, { type: "file", content: svgString }];
@@ -169,6 +169,14 @@ type Inputs = {
 };
 
 export default async function main({ fileId, FIGMA_TOKEN }: Inputs) {
+  if (!fileId) {
+    throw new Error("File ID is required");
+  }
+
+  if (!FIGMA_TOKEN) {
+    throw new Error("Figma token is required");
+  }
+
   const figmaService = new FigmaService({
     token: FIGMA_TOKEN,
   });
