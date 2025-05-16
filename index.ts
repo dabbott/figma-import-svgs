@@ -7,7 +7,9 @@ type FigmaNode = {
   type: "FRAME" | "COMPONENT" | "DOCUMENT" | "CANVAS" | "PAGE";
 };
 
-const tree = defineTree<FigmaNode>((node) => node.children);
+const tree = defineTree<FigmaNode>((node) =>
+  "children" in node && Array.isArray(node.children) ? node.children : []
+);
 
 export interface FigmaComponent {
   key: string;
