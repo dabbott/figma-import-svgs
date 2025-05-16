@@ -146,14 +146,7 @@ export class FigmaService {
       return {};
     }
 
-    const componentList: FigmaComponentWithId[] = componentEntries.map(
-      ([id, component]) => ({
-        ...component,
-        id,
-      })
-    );
-
-    let componentIds = componentList.map((c) => c.id);
+    let componentIds = Object.keys(data.components);
 
     console.log("File", tree.diagram(data.document));
 
@@ -189,8 +182,10 @@ export class FigmaService {
     );
 
     const svgFiles = await Promise.all(
-      componentList.map(async (component) => {
-        const svgUrl = svgUrls[component.id];
+      componentIds.map(async (componentId) => {
+        const svgUrl = svgUrls[componentId];
+
+        const component = data.components[componentId];
 
         console.log("Fetching SVG for", component.name);
 
