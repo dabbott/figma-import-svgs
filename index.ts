@@ -9,7 +9,9 @@ type FigmaNode = {
 
 const tree = defineTree<FigmaNode>((node) =>
   "children" in node && Array.isArray(node.children) ? node.children : []
-);
+).withOptions({
+  getLabel: (node) => node.name,
+});
 
 export interface FigmaComponent {
   key: string;
@@ -152,6 +154,8 @@ export class FigmaService {
     );
 
     let componentIds = componentList.map((c) => c.id);
+
+    console.log("File", tree.diagram(data.document));
 
     if (options.nodeId) {
       const node = tree.find(
