@@ -126,6 +126,8 @@ export class FigmaService {
     console.log("Fetching Figma file", fileId, version);
 
     const data = await this.fetchFile(fileId, version);
+
+    console.log("Fetched Figma file", data);
     const componentEntries = Object.entries(data.components || {});
 
     if (componentEntries.length === 0) {
@@ -151,7 +153,7 @@ export class FigmaService {
       componentList.map(async (component) => {
         const svgUrl = svgUrls[component.id];
 
-        console.log("Fetching content", svgUrl);
+        console.log("Fetching SVG for", component.name);
 
         const svgString = await this.fetchSVGContent(svgUrl);
 
