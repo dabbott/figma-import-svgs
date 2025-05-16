@@ -136,11 +136,11 @@ export class FigmaService {
     const fileId = options.fileId;
     const version = options.version;
 
-    console.log("Fetching Figma file", fileId, version);
+    console.log("🔍 Fetching Figma file", fileId);
 
     const data = await this.fetchFile(fileId, version);
 
-    console.log("Fetched Figma file", data);
+    console.log("✅ Fetched Figma file");
 
     const componentEntries = Object.entries(data.components || {});
 
@@ -161,7 +161,7 @@ export class FigmaService {
         );
       }
 
-      console.log("Looking for children of node", node.name);
+      console.log("🔍 Looking for children of node", node.name);
 
       const descendantComponents = tree.findAll(
         node,
@@ -175,7 +175,7 @@ export class FigmaService {
       componentIds = Array.from(descendantComponentIds);
     }
 
-    console.log("Found", componentIds.length, "components");
+    console.log("✅ Found", componentIds.length, "components");
 
     const svgUrls = await this.fetchComponentSVGs(
       fileId,
@@ -208,7 +208,7 @@ export class FigmaService {
 
     const svgFiles = await Promise.all(
       componentsWithUrls.map(async (componentWithUrl) => {
-        console.log("Fetching SVG for", componentWithUrl.component.name);
+        console.log("🔍 Fetching SVG for", componentWithUrl.component.name);
 
         const svgString = await this.fetchSVGContent(componentWithUrl.url);
 
@@ -218,6 +218,8 @@ export class FigmaService {
         ];
       })
     );
+
+    console.log("✅ Fetched all SVGs");
 
     return Object.fromEntries(svgFiles);
   }
