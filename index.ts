@@ -150,13 +150,15 @@ export class FigmaService {
 
     let componentIds = Object.keys(data.components);
 
-    if (options.nodeId) {
-      const nodeId = options.nodeId.replaceAll(/-/g, ":");
+    if (options.parentNodeId) {
+      const parentNodeId = options.parentNodeId.replaceAll(/-/g, ":");
 
-      const node = tree.find(data.document, (node) => node.id === nodeId);
+      const node = tree.find(data.document, (node) => node.id === parentNodeId);
 
       if (!node) {
-        throw new Error(`Node with id ${options.nodeId} not found`);
+        throw new Error(
+          `Parent node with id ${options.parentNodeId} not found`
+        );
       }
 
       console.log("Looking for children of node", node.name);
@@ -223,7 +225,7 @@ export class FigmaService {
 
 type Inputs = {
   fileId: string;
-  nodeId?: string;
+  parentNodeId?: string;
   version?: string;
   FIGMA_TOKEN: string;
 };
