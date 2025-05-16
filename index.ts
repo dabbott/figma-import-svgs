@@ -158,10 +158,9 @@ export class FigmaService {
     console.log("File", tree.diagram(data.document));
 
     if (options.nodeId) {
-      const node = tree.find(
-        data.document,
-        (node) => node.id === options.nodeId
-      );
+      const nodeId = options.nodeId.replaceAll(/-/g, ":");
+
+      const node = tree.find(data.document, (node) => node.id === nodeId);
 
       if (!node) {
         throw new Error(`Node with id ${options.nodeId} not found`);
