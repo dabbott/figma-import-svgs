@@ -1,0 +1,14 @@
+{
+  "name": "figma-import-svgs",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "tree-visit": "^0.5.1"
+  }
+}

@@ -1,3 +1,14 @@
+import { defineTree } from "tree-visit";
+
+type FigmaNode = {
+  id: string;
+  name: string;
+  children: FigmaNode[];
+  type: "FRAME" | "COMPONENT" | "DOCUMENT" | "CANVAS" | "PAGE";
+};
+
+const tree = defineTree<FigmaNode>((node) => node.children);
+
 export interface FigmaComponent {
   key: string;
   name: string;
@@ -9,10 +20,7 @@ export interface FigmaComponent {
 type FigmaComponentWithId = FigmaComponent & { id: string };
 
 export interface FigmaFile {
-  document: {
-    children: any[];
-    name: string;
-  };
+  document: FigmaNode;
   components: { [key: string]: FigmaComponent };
   name: string;
   lastModified: string;
@@ -118,6 +126,7 @@ export class FigmaService {
 
   async import(options: {
     fileId: string;
+    nodeId?: string;
     version?: string;
   }): Promise<Record<string, string>> {
     const fileId = options.fileId;
@@ -128,6 +137,7 @@ export class FigmaService {
     const data = await this.fetchFile(fileId, version);
 
     console.log("Fetched Figma file", data);
+
     const componentEntries = Object.entries(data.components || {});
 
     if (componentEntries.length === 0) {
@@ -141,7 +151,33 @@ export class FigmaService {
       })
     );
 
-    const componentIds = componentList.map((c) => c.id);
+    let componentIds = componentList.map((c) => c.id);
+
+    if (options.nodeId) {
+      const node = tree.find(
+        data.document,
+        (node) => node.id === options.nodeId
+      );
+
+      if (!node) {
+        throw new Error(`Node with id ${options.nodeId} not found`);
+      }
+
+      console.log("Looking for children of node", node.name);
+
+      const descendantComponents = tree.findAll(
+        node,
+        (node) => node.type === "COMPONENT"
+      );
+
+      const descendantComponentIds = new Set(
+        descendantComponents.map((c) => c.id)
+      );
+
+      componentIds = Array.from(descendantComponentIds);
+    }
+
+    console.log("Found", componentIds.length, "components");
 
     const svgUrls = await this.fetchComponentSVGs(
       fileId,
@@ -167,10 +203,17 @@ export class FigmaService {
 
 type Inputs = {
   fileId: string;
+  nodeId?: string;
+  version?: string;
   FIGMA_TOKEN: string;
 };
 
-export default async function main({ fileId, FIGMA_TOKEN }: Inputs) {
+export default async function main({
+  fileId,
+  nodeId,
+  version,
+  FIGMA_TOKEN,
+}: Inputs) {
   if (!fileId) {
     throw new Error("File ID is required");
   }
