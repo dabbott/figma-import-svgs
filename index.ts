@@ -37,6 +37,8 @@ export interface FigmaError {
   err: string;
 }
 
+type File = { type: "file"; content: string };
+
 interface FigmaServiceOptions {
   token: string;
   fetch?: typeof globalThis.fetch;
@@ -130,7 +132,7 @@ export class FigmaService {
 
   async import(
     options: Omit<Inputs, "FIGMA_TOKEN">
-  ): Promise<Record<string, string>> {
+  ): Promise<Record<string, File>> {
     const fileId = options.fileId;
     const version = options.version;
 
@@ -179,17 +181,39 @@ export class FigmaService {
       version
     );
 
+    const componentsWithUrls = componentIds.flatMap((componentId) => {
+      const svgUrl = svgUrls[componentId];
+
+      const component = data.components[componentId];
+
+      if (!svgUrl) {
+        console.warn(
+          "SVG URL not found for component",
+          component.name,
+          componentId
+        );
+
+        return [];
+      }
+
+      return [
+        {
+          component,
+          url: svgUrl,
+        },
+      ];
+    });
+
     const svgFiles = await Promise.all(
-      componentIds.map(async (componentId) => {
-        const svgUrl = svgUrls[componentId];
+      componentsWithUrls.map(async (componentWithUrl) => {
+        console.log("Fetching SVG for", componentWithUrl.component.name);
 
-        const component = data.components[componentId];
+        const svgString = await this.fetchSVGContent(componentWithUrl.url);
 
-        console.log("Fetching SVG for", component.name);
-
-        const svgString = await this.fetchSVGContent(svgUrl);
-
-        return [`${component.name}.svg`, { type: "file", content: svgString }];
+        return [
+          `${componentWithUrl.component.name}.svg`,
+          { type: "file", content: svgString },
+        ];
       })
     );
 
