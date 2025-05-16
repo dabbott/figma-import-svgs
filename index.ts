@@ -148,8 +148,6 @@ export class FigmaService {
 
     let componentIds = Object.keys(data.components);
 
-    console.log("File", tree.diagram(data.document));
-
     if (options.nodeId) {
       const nodeId = options.nodeId.replaceAll(/-/g, ":");
 
