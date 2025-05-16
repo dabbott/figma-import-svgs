@@ -124,11 +124,9 @@ export class FigmaService {
     return response.text();
   }
 
-  async import(options: {
-    fileId: string;
-    nodeId?: string;
-    version?: string;
-  }): Promise<Record<string, string>> {
+  async import(
+    options: Omit<Inputs, "FIGMA_TOKEN">
+  ): Promise<Record<string, string>> {
     const fileId = options.fileId;
     const version = options.version;
 
@@ -208,13 +206,8 @@ type Inputs = {
   FIGMA_TOKEN: string;
 };
 
-export default async function main({
-  fileId,
-  nodeId,
-  version,
-  FIGMA_TOKEN,
-}: Inputs) {
-  if (!fileId) {
+export default async function main({ FIGMA_TOKEN, ...inputs }: Inputs) {
+  if (!inputs.fileId) {
     throw new Error("File ID is required");
   }
 
@@ -226,9 +219,7 @@ export default async function main({
     token: FIGMA_TOKEN,
   });
 
-  const results = await figmaService.import({
-    fileId,
-  });
+  const results = await figmaService.import(inputs);
 
   return results;
 }
