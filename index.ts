@@ -21,8 +21,6 @@ export interface FigmaComponent {
   documentationLinks: string[];
 }
 
-type FigmaComponentWithId = FigmaComponent & { id: string };
-
 export interface FigmaFile {
   document: FigmaNode;
   components: { [key: string]: FigmaComponent };
@@ -37,7 +35,12 @@ export interface FigmaError {
   err: string;
 }
 
-type File = { type: "file"; content: string };
+type File = {
+  id: string;
+  kind: "file";
+  content: string;
+  encoding: "utf-8";
+};
 
 interface FigmaServiceOptions {
   token: string;
@@ -214,7 +217,12 @@ export class FigmaService {
 
         return [
           `${componentWithUrl.component.name}.svg`,
-          { type: "file", content: svgString },
+          {
+            id: crypto.randomUUID(),
+            kind: "file",
+            content: svgString,
+            encoding: "utf-8",
+          },
         ];
       })
     );
