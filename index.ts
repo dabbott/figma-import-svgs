@@ -136,8 +136,22 @@ export class FigmaService {
   async import(
     options: Omit<Inputs, "FIGMA_TOKEN">
   ): Promise<Record<string, File>> {
-    const fileId = options.fileId;
     const version = options.version;
+
+    let fileId: string | undefined = options.fileId;
+    let parentNodeId: string | undefined = options.parentNodeId;
+
+    if (!fileId && options.fileUrl) {
+      const parsed = parseFileUrl(options.fileUrl);
+      fileId = parsed.fileId;
+      if (!parentNodeId && parsed.nodeId) {
+        parentNodeId = parsed.nodeId;
+      }
+    }
+
+    if (!fileId) {
+      throw new Error("File ID could not be determined from inputs");
+    }
 
     console.log("🔍 Fetching Figma file", fileId);
 
@@ -153,15 +167,16 @@ export class FigmaService {
 
     let componentIds = Object.keys(data.components);
 
-    if (options.parentNodeId) {
-      const parentNodeId = options.parentNodeId.replaceAll(/-/g, ":");
+    if (parentNodeId) {
+      const normalizedParentNodeId = parentNodeId.replaceAll(/-/g, ":");
 
-      const node = tree.find(data.document, (node) => node.id === parentNodeId);
+      const node = tree.find(
+        data.document,
+        (node) => node.id === normalizedParentNodeId
+      );
 
       if (!node) {
-        throw new Error(
-          `Parent node with id ${options.parentNodeId} not found`
-        );
+        throw new Error(`Parent node with id ${parentNodeId} not found`);
       }
 
       console.log("🔍 Looking for children of node", node.name);
@@ -233,16 +248,40 @@ export class FigmaService {
   }
 }
 
+// example: https://www.figma.com/design/1234567890/File-Name?node-id=123-456&p=f&t=1234567890
+function parseFileUrl(fileUrl: string): { fileId: string; nodeId?: string } {
+  const url = new URL(fileUrl);
+
+  const pathSegments = url.pathname.split("/").filter(Boolean);
+
+  let fileId: string | undefined;
+  for (let i = 0; i < pathSegments.length - 1; i++) {
+    const segment = pathSegments[i];
+    if (segment === "file" || segment === "design" || segment === "proto") {
+      fileId = pathSegments[i + 1];
+      break;
+    }
+  }
+
+  if (!fileId) {
+    throw new Error("Invalid Figma URL: could not extract file ID");
+  }
+
+  const nodeIdParam = url.searchParams.get("node-id") ?? undefined;
+  return { fileId, nodeId: nodeIdParam };
+}
+
 type Inputs = {
-  fileId: string;
+  fileUrl?: string;
+  fileId?: string;
   parentNodeId?: string;
   version?: string;
   FIGMA_TOKEN: string;
 };
 
 export default async function main({ FIGMA_TOKEN, ...inputs }: Inputs) {
-  if (!inputs.fileId) {
-    throw new Error("File ID is required");
+  if (!inputs.fileId && !inputs.fileUrl) {
+    throw new Error("File ID or URL is required");
   }
 
   if (!FIGMA_TOKEN) {
